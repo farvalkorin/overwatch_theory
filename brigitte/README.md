@@ -16,4 +16,7 @@ combo (shield bash -> melee -> whip).
 
 ![Alt text](images/mccree_flash.png?raw=true "Title")
 
+In this case, it's assumed that mccree can hit perfect headshots and he still
+loses if he's stunned with the combo first. Stick to flash then Fan the Hammer.
+
 ![Alt text](images/mccree_noflash.png?raw=true "Title")
