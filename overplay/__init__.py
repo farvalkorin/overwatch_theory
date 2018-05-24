@@ -1,18 +1,20 @@
 import numpy as np
-
+from matplotlib import pyplot as plt
 
 class Ability(object):
-    def __init__(self, damage=0.0, healing=0.0, ammo_used=0.0, runtime=0.0, cooldown=0.0, has_stun=False,
-    has_knockback=False, has_falloff=False, start_falloff=0.0, end_falloff=0.0,
-    fallen_damage=0.0):
+    def __init__(self, damage=0.0, healing=0.0, ammo_used=0.0,
+    casttime=0.0, duration=0.0, cooldown=0.0,
+    has_stun=False, has_knockback=False,
+    has_falloff=False, start_falloff=0.0, end_falloff=0.0, fallen_damage=0.0):
         self.damage = damage
         self.healing = healing
-        self.runtime = runtime
-        if self.runtime < 0.001: # 1 "tick"
-            self.runtime = 0.001
+        self.casttime = casttime
+        self.duration = duration
+        if self.duration < 0.001: # 1 "tick"
+            self.duration = 0.001
         self.cooldown = cooldown
 
-        self.activation_delay = self.runtime + self.cooldown
+        self.activation_delay = self.casttime + self.duration + self.cooldown
 
         self.has_stun = has_stun
         self.has_knockback = has_knockback
@@ -32,10 +34,10 @@ class Ability(object):
         '''
         Use ability
         '''
-        hps = self.healing / self.runtime
+        hps = self.healing / self.duration
 
         effective_damage = self.damage
-        if has_falloff and range_ > self.start_falloff:
+        if self.has_falloff and range_ > self.start_falloff:
             if range_ > self.end_falloff:
                 effective_damage = fallen_damage
             else:
@@ -44,18 +46,18 @@ class Ability(object):
                 effective_damage = ((1 - percent_fallen) * self.damage +
                     (percent_fallen) * self.fallen_damage)
             
-        dps = effective_damage / self.runtime
+        dps = effective_damage / self.duration
         
         if np.random.random() > accuracy:
             '''
             Ability missed
             '''
-            return (True, dps, hps, self.has_stun, 0)
+            return (True, dps, hps, self.has_stun, 0, 0)
 
         '''
         Ability hit
         '''
-        return (True, dps, hps, self.has_stun, self.runtime)
+        return (True, dps, hps, self.has_stun, self.casttime, self.duration)
 
 class Hero(object):
     '''
@@ -81,16 +83,17 @@ class Hero(object):
         self.is_casting_until = -9000
 
     def _update_abilities(self, current_time, new_abilities, time_step=0.001):
-        for ability_name in new_abilities:
-            result = self.abilities[ability_name].activate()
+        for ability_name, accuracy, range_ in new_abilities:
+            result = self.abilities[ability_name].activate(current_time,
+            accuracy, range_)
             if not result[0]:
                 continue
-            activated, dps, hps, has_stun, runtime = result
-            if runtime <= 0.0:
+            activated, dps, hps, has_stun, casttime, duration = result
+            if duration <= 0.0:
                 continue
             self.active_abilities[ability_name] = {
-                'start_time': current_time,
-                'end_time': current_time + runtime,
+                'start_time': current_time + casttime,
+                'end_time': current_time + casttime + duration,
                 'dps': dps,
                 'hps': hps,
                 'has_stun': has_stun,
@@ -99,7 +102,7 @@ class Hero(object):
         healing_in = 0.0
         for ability_name in self.active_abilities:
             ability_state = self.active_abilities[ability_name]
-            if abililty_state['start_time'] <= current_time < ability_state['end_time']:
+            if ability_state['start_time'] <= current_time < ability_state['end_time']:
                 damage_out += ability_state['dps'] * time_step
                 healing_in += ability_state['hps'] * time_step
 
@@ -196,11 +199,13 @@ def run_simulation(hero1, hero2, schedule1 = {}, schedule2 = {}):
             activations = schedule2[current_time]
         h2d, h2h = hero2._update_abilities(current_time, activations, time_step)
 
-        h1health, h1armor, h1shield = hero1._update_healthbar(current_time, h2d, h1h)
+        h1health, h1armor, h1shields = hero1._update_healthbar(current_time, h2d, h1h)
+        h2health, h2armor, h2shields = hero2._update_healthbar(current_time, h1d, h2h)
+
+        current_time = int(current_time / time_step)
         healthbar1[current_time, 0] = h1health
         healthbar1[current_time, 1] = h1armor
         healthbar1[current_time, 2] = h1shields
-        h2health, h2armor, h2shield = hero2._update_healthbar(current_time, h1d, h2h)
         healthbar2[current_time, 0] = h2health
         healthbar2[current_time, 1] = h2armor
         healthbar2[current_time, 2] = h2shields
@@ -209,6 +214,8 @@ def run_simulation(hero1, hero2, schedule1 = {}, schedule2 = {}):
     healthbar2 = np.sum(healthbar2, axis=1)
 
     plt.plot(times, healthbar1, label='hero1')
-    plt.plot(times, healthbar2, label='hero2')
+    # plt.plot(times, healthbar2, label='hero2')
+    plt.legend()
+    plt.tight_layout()
     plt.show()
 

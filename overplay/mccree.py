@@ -18,5 +18,5 @@ abilities = {
    'flashbang': flashbang,
 }
 
-McCree = Hero(health=200, **abilities)
+McCree = Hero(health=200, armor=0, shields=0, ammo=6, **abilities)
 
