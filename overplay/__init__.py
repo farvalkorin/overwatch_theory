@@ -31,9 +31,12 @@ class Ability(object):
             Ability still on cooldown
             '''
             return (False,)
+
         '''
-        Use ability
+        Attempt to use ability
         '''
+        self.last_activation = current_time
+
         hps = self.healing / self.duration
 
         effective_damage = self.damage
@@ -182,21 +185,22 @@ class Hero(object):
 
 def run_simulation(hero1, hero2, schedule1 = {}, schedule2 = {}):
     '''
-    schedule is a dictionary where the key is the time in seconds and the value
+    schedule is a dictionary where the key is the time in milliseconds and the value
     is a list of abilities to try and use (often just 1)
     '''
+    np.random.seed(12345)
     time_step = 0.001
-    times = np.arange(0, 5, time_step)
+    times = np.arange(0, 10, time_step)
     healthbar1 = np.zeros((times.shape[0], 3))
     healthbar2 = np.zeros((times.shape[0], 3))
     for index, current_time in enumerate(times):
         activations = []
-        if current_time in schedule1:
-            activations = schedule1[current_time]
+        if index in schedule1:
+            activations = schedule1[index]
         h1d, h1h = hero1._update_abilities(current_time, activations, time_step)
         activations = []
-        if current_time in schedule2:
-            activations = schedule2[current_time]
+        if index in schedule2:
+            activations = schedule2[index]
         h2d, h2h = hero2._update_abilities(current_time, activations, time_step)
 
         h1health, h1armor, h1shields = hero1._update_healthbar(current_time, h2d, h1h)
