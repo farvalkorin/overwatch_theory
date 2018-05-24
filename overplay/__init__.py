@@ -189,7 +189,7 @@ def run_simulation(hero1, hero2, schedule1 = {}, schedule2 = {}):
     times = np.arange(0, 5, time_step)
     healthbar1 = np.zeros((times.shape[0], 3))
     healthbar2 = np.zeros((times.shape[0], 3))
-    for current_time in times:
+    for index, current_time in enumerate(times):
         activations = []
         if current_time in schedule1:
             activations = schedule1[current_time]
@@ -202,19 +202,28 @@ def run_simulation(hero1, hero2, schedule1 = {}, schedule2 = {}):
         h1health, h1armor, h1shields = hero1._update_healthbar(current_time, h2d, h1h)
         h2health, h2armor, h2shields = hero2._update_healthbar(current_time, h1d, h2h)
 
-        current_time = int(current_time / time_step)
-        healthbar1[current_time, 0] = h1health
-        healthbar1[current_time, 1] = h1armor
-        healthbar1[current_time, 2] = h1shields
-        healthbar2[current_time, 0] = h2health
-        healthbar2[current_time, 1] = h2armor
-        healthbar2[current_time, 2] = h2shields
+        if h1health <= 0.0 or h2health <= 0.0:
+            healthbar1[index:, 0] = h1health
+            healthbar1[index:, 1] = h1armor
+            healthbar1[index:, 2] = h1shields
+            healthbar2[index:, 0] = h2health
+            healthbar2[index:, 1] = h2armor
+            healthbar2[index:, 2] = h2shields
+            break
+            
+
+        healthbar1[index, 0] = h1health
+        healthbar1[index, 1] = h1armor
+        healthbar1[index, 2] = h1shields
+        healthbar2[index, 0] = h2health
+        healthbar2[index, 1] = h2armor
+        healthbar2[index, 2] = h2shields
 
     healthbar1 = np.sum(healthbar1, axis=1)
     healthbar2 = np.sum(healthbar2, axis=1)
 
     plt.plot(times, healthbar1, label='hero1')
-    # plt.plot(times, healthbar2, label='hero2')
+    plt.plot(times, healthbar2, label='hero2')
     plt.legend()
     plt.tight_layout()
     plt.show()
